@@ -242,6 +242,21 @@ set(TIFF_INCLUDE_DIR "${ALDE_CTC_CROSS}/tiff/include" CACHE INTERNAL "" FORCE)
 set(PNG_LIBRARY "${ALDE_CTC_CROSS}/png/lib/libpng.so" CACHE INTERNAL "" FORCE)
 set(PNG_PNG_INCLUDE_DIR "${ALDE_CTC_CROSS}/png/include" CACHE INTERNAL "" FORCE)
 
+set(HDF5_LIBRARY "/home/nao/${INSTALL_ROOT}/ros1_dependencies/lib/libhdf5.so" CACHE INTERNAL "" FORCE)
+set(HDF5_INCLUDE_DIRS "/home/nao/${INSTALL_ROOT}/ros1_dependencies/include" CACHE INTERNAL "" FORCE)
+
+set(FLANN_LIBRARY "/home/nao/${INSTALL_ROOT}/ros1_dependencies/lib/libflann.so" CACHE INTERNAL "" FORCE)
+set(FLANN_INCLUDE_DIR "/home/nao/${INSTALL_ROOT}/ros1_dependencies/include" CACHE INTERNAL "" FORCE)
+
+set(QHULL_LIBRARY "/home/nao/${INSTALL_ROOT}/ros1_dependencies/lib/liblibqhull.so" CACHE INTERNAL "" FORCE)
+set(QHULL_INCLUDE_DIR "/home/nao/${INSTALL_ROOT}/ros1_dependencies/include" CACHE INTERNAL "" FORCE)
+
+set(YAML_CPP_LIBRARIES "/home/nao/${INSTALL_ROOT}/ros1_dependencies/lib/libyaml-cpp.so" CACHE INTERNAL "" FORCE)
+set(YAML_CPP_INCLUDE_DIR "/home/nao/${INSTALL_ROOT}/ros1_dependencies/include" CACHE INTERNAL "" FORCE)
+
+#set(EIGEN3_LIBRARY "${ALDE_CTC_CROSS}/png/lib/libpng.so" CACHE INTERNAL "" FORCE)
+set(EIGEN_INCLUDE_DIR "${ALDE_CTC_CROSS}/eigen3/include/eigen3" CACHE INTERNAL "" FORCE)
+
 link_directories(${ALDE_CTC_CROSS}/boost/lib)
 link_directories(${ALDE_CTC_CROSS}/bzip2/lib)
 link_directories(${ALDE_CTC_CROSS}/ffmpeg/lib)
@@ -263,6 +278,8 @@ link_directories(${ALDE_CTC_CROSS}/vorbis/lib)
 link_directories(${ALDE_CTC_CROSS}/xz_utils/lib)
 link_directories(${ALDE_CTC_CROSS}/zlib/lib)
 link_directories(${ALDE_CTC_CROSS}/openssl/lib)
+
+include_directories(${ALDE_CTC_CROSS}/eigen3/include)
 
 set(_link_flags "")
 
@@ -351,6 +368,46 @@ elseif(
     -lz \
     "
   )
+elseif(
+  PROJECT_NAME STREQUAL "image_proc"
+)
+  set(_link_flags
+    "\
+    -ljpeg \
+    -llzma \
+    -lpng16 \
+    -ltiff \
+    -lz \
+    "
+  )
+elseif(
+  PROJECT_NAME STREQUAL "amcl"
+)
+  set(_link_flags
+    "\
+    -lbz2 \
+    "
+  )
+ elseif(
+       PROJECT_NAME STREQUAL "pcl_ros"
+  )
+    set(_link_flags
+      "\
+      -lbz2 \
+      -lz \
+      -lpcl_io_ply \
+      "
+    )
+  elseif(
+       PROJECT_NAME STREQUAL "pcl_ros"
+  )
+    set(_link_flags
+      "\
+      -lbz2 \
+      -lz \
+      -lpcl_io_ply \
+      "
+    )
 endif()
 
 set(EIGEN3_INCLUDE_DIR ${ALDE_CTC_CROSS}/eigen3/include/eigen3/ CACHE INTERNAL "" FORCE)

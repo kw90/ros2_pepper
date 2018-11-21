@@ -15,6 +15,14 @@ repositories:
     type: git
     url: https://github.com/PointCloudLibrary/pcl.git
     version: master
+  eigen3:
+    type: git
+    url: https://github.com/eigenteam/eigen-git-mirror.git
+    version: e3e413ac46faaac0c4441b44b34936fcfa16f789
+  hdf5:
+    type: git
+    url: https://github.com/fmrico/hdf5-crossready.git
+    version: master
   poco:
     type: git
     url: https://github.com/pocoproject/poco.git
@@ -51,3 +59,7 @@ repositories:
     type: git
     url: https://github.com/jbeder/yaml-cpp.git
     version: 998d7bf31e1bab4e45221c28fad8e00ddcf8855e
+  opencv:
+    type: git
+    url: https://github.com/opencv/opencv.git
+    version: master
