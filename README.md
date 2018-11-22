@@ -1,163 +1,90 @@
-## Introduction
-
-This project contains a set of patches and scripts to compile and run ROS 1 and ROS 2 onboard a Pepper robot, without the need of a tethered computer.
+## Introduction 
+This project contains a set of patches and scripts to cross-compile ROS inside a Ubuntu Docker container using a i386 architecture. The compiled ROS files can then be run onboard a Pepper robot, without the need of a tethered computer or superuser privileges. 
 
 ## Pre-requirements
-
-Download and extract the [NaoQi C++ framework](http://doc.aldebaran.com/2-5/index_dev_guide.html) and Softbanks's crosstool chain and point the `AL_DIR` and `ALDE_CTC_CROSS` environment variables to their respective paths:
-
+Download the NaoQi C++ framework and Softbanks's crosstool chain from [here](http://doc.aldebaran.com/2-5/index_dev_guide.html) and extract them to the users home folder. The crosstool chain ctc-linux64-atom-2.5.2.74 should be a subfolder of the NaoQi C++ framework. Then point the `AL_DIR` and `ALDE_CTC_CROSS` environment variables to their respective paths:
 ```
-export AL_DIR=/home/NaoQi  <-- Or wherever you installed NaoQi
+export AL_DIR=/home/[user]/naoqi
 export ALDE_CTC_CROSS=$AL_DIR/ctc-linux64-atom-2.5.2.74
 ```
 
-## Prepare cross-compiling environment
-
-We're going to use Docker to set up a container that will compile all the tools for cross-compiling ROS and all of its dependencies. Go to https://https://www.docker.com/community-edition to download it and install it for your Linux distribution.
-
-
-1. Clone the project's repository
-
-```
-$ git clone git clone https://github.com/esteve/ros2_pepper.git
-$ cd ros2_pepper
+## ROS
+### Prepare cross-compiling environment
+Clone the project's repository 
+``` 
+git clone https://github.com/kw90/ros2_pepper.git
+cd pepper-ros-install-isolated
 ```
 
-## ROS 1
+### Prepare the requirements for ROS 
+The following script will create a Docker image and compile Python interpreters suitable for both the host and the robot. 
+``` 
+./prepare_requirements_ros1.sh 
+``` 
 
-### Prepare the requirements for ROS 1
+### Build ROS dependencies 
+Before we actually build ROS for Pepper, there's a bunch of dependencies we'll need to cross compile which are not available in Softbank's CTC: 
+- console_bridge 
+- uuid 
+- poco 
+- urdfdom_headers 
+- urdfdom 
+- tinyxml2 
+- SDL 
+- SDL_image 
+- bullet3 
+- yaml-cpp 
+- qhull 
+- flann 
+- PCL 
 
-The following script will create a Docker image and compile Python interpreters suitable for both the host and the robot.
+``` 
+./build_ros1_dependencies.sh 
+``` 
 
+### Check required ROS packages 
+Check and if necessary add required ROS packages from a [ros-gbp release page](https://github.com/ros-gbp) to the file *repos/pepper_ros1.repos* of the form: 
 ```
-./prepare_requirements_ros1.sh
-```
+[ROS_package]:
+     type: git
+     url: https://github.com/ros-gbp/[ROS_release-package].git
+     version: [specific release version]
+``` 
 
-### Build ROS 1 dependencies
+### Build ROS 
+Finally, build the whole ROS core and other ROS catkin packages
+``` 
+./build_ros1.sh 
+``` 
 
-Before we actually build ROS for Pepper, there's a bunch of dependencies we'll need to cross compile which are not available in Softbank's CTC:
+### Copy ROS and its dependencies to the robot 
+By now you should have the following inside *.ros-root* in the current directory: 
+- Python 2.7 built for Pepper (.ros-root/Python-2.7.13) 
+- All the dependencies required by ROS (.ros-root/ros1_dependencies) 
+- A ROS workspace with ROS Kinetic built for Pepper (.ros-root/ros1_inst) 
+- A helper script that will set up the ROS workspace in the robot (.ros-root/setup_ros1_pepper.bash) 
 
-- console_bridge
-- poco
-- tinyxml2
-- urdfdom
-- urdfdom_headers
+We're going to copy these to the robot, assuming that your robot is connected to your network, type the following: 
+``` 
+scp -r .ros-root nao@IP_ADDRESS_OF_PEPPER:.ros-root 
+``` 
 
-```
-./build_ros1_dependencies.sh
-```
+### Run ROS on Pepper 
+Now that we have it all in the robot, let's give it a try: 
 
-### Build ROS 1
+- SSH into the robot
 
-Finally! Type the following, go grab a coffee and after a while you'll have an entire base ROS distro built for Pepper.
+    ```
+    ssh nao@IP_ADDRESS_OF_PEPPER
+    ``` 
+- Source the setup script
 
-```
-./build_ros1.sh
-```
+    ```
+    source .ros-root/setup_ros1_pepper.bash
+    ``` 
+- Start *naoqi_driver*, note that *NETWORK\_INTERFACE* may be either **wlan0** or **eth0**, pick the appropriate interface if your robot is connected via wifi or ethernet.
 
-### Copy ROS and its dependencies to the robot
+    ```
+    roslaunch pepper_bringup pepper_full.launch nao_ip:=IP_ADDRESS_OF_PEPPER roscore_ip:=IP_ADDRESS_OF_PEPPER network_interface:=NETWORK_INTERFACE
+    ```
 
-By now you should have the following inside .ros-root in the current directory:
-
-- Python 2.7 built for Pepper (.ros-root/Python-2.7.13)
-- All the dependencies required by ROS (.ros-root/ros1_dependencies)
-- A ROS workspace with ROS Kinetic built for Pepper (.ros-root/ros1_inst)
-- A helper script that will set up the ROS workspace in the robot (.ros-root/setup_ros1_pepper.bash)
-
-We're going to copy these to the robot, assuming that your robot is connected to your network, type the following:
-
-```
-$ scp -r .ros-root nao@IP_ADDRESS_OF_YOUR_ROBOT:.ros-root
-```
-
-### Run ROS 1 from inside Pepper
-
-Now that we have it all in the robot, let's give it a try:
-
-*SSH into the robot*
-
-```
-$ ssh nao@IP_ADDRESS_OF_YOUR_ROBOT
-```
-
-*Source (not run) the setup script*
-
-```
-$ source .ros-root/setup_ros1_pepper.bash
-```
-
-*Start naoqi_driver, note that NETWORK\_INTERFACE may be either wlan0 or eth0, pick the appropriate interface if your robot is connected via wifi or ethernet*
-
-```
-$ roslaunch naoqi_driver naoqi_driver.launch nao_ip:=IP_ADDRESS_OF_YOUR_ROBOT \
-    roscore_ip:=IP_ADDRESS_OF_YOUR_ROBOT network_interface:=NETWORK_INTERFACE
-```
-
-## ROS 2
-
-BEWARE: The ROS 2 port is still experimental and incomplete, simple sensors such as the bumpers work, but the camera driver has not been ported yet.
-
-The following instructions require that you have ROS 1 built for Pepper.
-
-### Prepare the requirements for ROS 2
-
-The following script will create a Docker image and compile Python interpreters suitable for both the host and the robot.
-
-```
-./prepare_requirements_ros2.sh
-```
-
-### Build ROS 2
-
-Let's now build ROS 2 for Pepper:
-
-```
-./build_ros2.sh
-```
-
-### Copy ROS 2 and its dependencies to the robot
-
-Besides the ROS 1 binaries and its dependencies, we'll now a few more directories inside .ros-root in our current directory:
-
-- Python 3.6 built for Pepper (.ros-root/Python-3.6.1)
-- A ROS 2 workspace built for Pepper (.ros-root/ros2_inst)
-
-We're going to copy these to the robot, assuming that your robot is connected to your network, type the following:
-
-```
-$ scp -r .ros-root nao@IP_ADDRESS_OF_YOUR_ROBOT:.ros-root
-```
-
-### Run ROS 2 from inside Pepper
-
-Now that we have it all in the robot, let's give it a try:
-
-*SSH into the robot*
-
-```
-$ ssh nao@IP_ADDRESS_OF_YOUR_ROBOT
-```
-
-*Source (not run) the setup script*
-
-```
-$ source .ros-root/setup_ros2_pepper.bash
-```
-
-ROS 2 does not have a something like roslaunch yet, so you'll have to run naoqi_driver directly:
-
-*Start naoqi_driver, note that NETWORK\_INTERFACE may be either wlan0 or eth0, pick the appropriate interface if your robot is connected via wifi or ethernet*
-
-```
-$ naoqi_driver_node --qi-url=tcp://IP_ADDRESS_OF_YOUR_ROBOT:9559 \
-    --roscore_ip=IP_ADDRESS_OF_YOUR_ROBOT --network_interface=NETWORK_INTERFACE \
-    --namespace=naoqi_driver
-```
-
-## Demos
-
-The folks at the [Universidad Rey Juan Carlos](http://robotica.gsyc.es/) and [Intelligent Robotics](http://inrobots.es/) have produced the following video showing a Pepper robot runnning ROS onboard using the code from this repository:
-
-[![Pepper Navigation](http://img.youtube.com/vi/0wIWJHMchaU/0.jpg)](https://www.youtube.com/watch?v=0wIWJHMchaU "Pepper Navigation")
-
-Enjoy!
