@@ -13,7 +13,7 @@ export ALDE_CTC_CROSS=$AL_DIR/ctc-linux64-atom-2.5.2.74
 Clone the project's repository 
 ``` 
 git clone https://github.com/kw90/ros2_pepper.git
-cd pepper-ros-install-isolated
+cd ros2_pepper
 ```
 
 ### Prepare the requirements for ROS 
